@@ -26,9 +26,9 @@ if (!isset($_POST['payload'])) {
     $log('No payload provided.');
     return;
 }
-$json = stripcslashes($_POST['payload']);
+$json = $_POST['payload'];
 if (!$payload = json_decode($json)) {
-    $log('Could not parse json.');
+    $log('Could not parse json: ' . $json);
     return;
 }
 
