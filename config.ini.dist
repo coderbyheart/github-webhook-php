@@ -1,0 +1,6 @@
+# Copy this to config.ini
+[repos]
+reponame = /path/to/working/copy/of/reponame
+[misc]
+; separate multiple recipienst by comma
+notify = me@domain.com
