@@ -66,12 +66,8 @@ foreach ($payload->commits as $commit) {
 $updateStatus = sprintf('Updating "%s" at "%s" …', $repoAndBranch, $wd);
 $msg .= PHP_EOL . PHP_EOL . $updateStatus . PHP_EOL . $hr . PHP_EOL;
 $log($updateStatus);
-$pullCmd = 'cd %s; ';
-if ($branch !== 'master') {
-    $pullCmd .= sprintf('git checkout %s; ', $branch);
-}
-$pullCmd .= 'git pull 2>&1';
-exec(sprintf($pullCmd, escapeshellarg($wd)), $pullOutput, $return);
+$pullCmd = sprintf('cd %s; git checkout %s; git pull 2>&1', escapeshellarg($wd), $branch);
+exec($pullCmd, $pullOutput, $return);
 exec(sprintf('cd %s; git status 2>&1', escapeshellarg($wd)), $statusOutput);
 $msg .= PHP_EOL . join(PHP_EOL, $pullOutput) . PHP_EOL . PHP_EOL;
 $msg .= PHP_EOL . 'Output of git status follows …' . PHP_EOL;
