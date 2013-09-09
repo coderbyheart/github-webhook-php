@@ -32,25 +32,21 @@ if (!$payload = json_decode($json)) {
     return;
 }
 
-// Only work on master branch
-// TODO: enable support for different branches
-$ref = $payload->ref;
-if ($ref !== 'refs/heads/master') {
-    $parts  = explode('/', $ref);
-    $branch = array_pop($parts);
-    $log(sprintf('Ignoring changes on branch "%s" …', $branch));
-    return;
-}
+// Which branch?
+$ref    = $payload->ref;
+$parts  = explode('/', $ref);
+$branch = array_pop($parts);
 
-$repo = $payload->repository->name;
-if (isset($config['repos'][$repo])) {
-    $log(sprintf('Update for "%s" requested …', $repo));
+$repo          = $payload->repository->name;
+$repoAndBranch = $branch !== 'master' ? $repo . '@' . $branch : $repo;
+if (isset($config['repos'][$repoAndBranch])) {
+    $log(sprintf('Update for "%s" requested …', $repoAndBranch));
 } else {
-    $log(sprintf('Unregistered repository "%s".', $repo));
+    $log(sprintf('Unregistered repository "%s".', $repoAndBranch));
     return;
 }
 
-$wd = $config['repos'][$repo];
+$wd = $config['repos'][$repoAndBranch];
 
 $hr = str_repeat('=', 72);
 
@@ -67,18 +63,22 @@ foreach ($payload->commits as $commit) {
 }
 
 // Update by pulling
-$updateStatus = sprintf('Updating "%s" at "%s" …', $repo, $wd);
+$updateStatus = sprintf('Updating "%s" at "%s" …', $repoAndBranch, $wd);
 $msg .= PHP_EOL . PHP_EOL . $updateStatus . PHP_EOL . $hr . PHP_EOL;
 $log($updateStatus);
-putenv('GIT_SSH=/kunden/265075_88045/bin/ssh-www.sh');
-exec(sprintf('cd %s; git pull 2>&1', escapeshellarg($wd)), $pullOutput, $return);
+$pullCmd = 'cd %s; ';
+if ($branch !== 'master') {
+    $pullCmd .= sprintf('git checkout %s; ', $branch);
+}
+$pullCmd .= 'git pull 2>&1';
+exec(sprintf($pullCmd, escapeshellarg($wd)), $pullOutput, $return);
 exec(sprintf('cd %s; git status 2>&1', escapeshellarg($wd)), $statusOutput);
 $msg .= PHP_EOL . join(PHP_EOL, $pullOutput) . PHP_EOL . PHP_EOL;
 $msg .= PHP_EOL . 'Output of git status follows …' . PHP_EOL;
 $msg .= PHP_EOL . join(PHP_EOL, $statusOutput);
 if ($return !== 0) {
     $log(sprintf("Update failed with exit code %d: %s", $return, PHP_EOL . $msg));
-    $mail(sprintf('GitHub Hook: PULL FAILED on "%s" for repository "%s".', $hostname, $repo), $msg);
+    $mail(sprintf('GitHub Hook: PULL FAILED on "%s" for repository "%s".', $hostname, $repoAndBranch), $msg);
     return;
 }
 
