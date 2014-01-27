@@ -14,7 +14,7 @@ if (!is_file($configFile)) {
 }
 $config     = parse_ini_file($configFile, true);
 $recipients = explode(',', $config['misc']['notify']);
-$hostname   = exec('hostname');
+$hostname   = exec('hostname -f');
 
 $mail = function ($subject, $body) use ($recipients) {
     foreach ($recipients as $email) {
